@@ -9,7 +9,9 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 
-//create function to filter user information for client
+import { Ratelimit } from "@upstash/ratelimit"; // for deno: see above
+import { Redis } from "@upstash/redis";
+
 const filterUserForClient = (user: User) => {
   return {
     id: user.id,
@@ -17,6 +19,12 @@ const filterUserForClient = (user: User) => {
     profileImageUrl: user.profileImageUrl,
   };
 };
+
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(3, "1 m"),
+  analytics: true,
+});
 
 export const postsRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
@@ -31,8 +39,6 @@ export const postsRouter = createTRPCRouter({
         limit: 100,
       })
     ).map(filterUserForClient);
-
-    console.log(users);
 
     return posts.map((post) => {
       const author = users.find((user) => user.id === post.authorId);
@@ -63,6 +69,9 @@ export const postsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const authorId = ctx.userId;
+
+      const { success } = await ratelimit.limit(authorId);
+      if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
 
       const post = await ctx.prisma.post.create({
         data: {
