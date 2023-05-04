@@ -3,7 +3,7 @@ export const LoadingSpinner = (props: { size?: number }) => {
     <div role="status">
       <svg
         aria-hidden="true"
-        className="mr-2 h-8 w-8 animate-spin fill-slate-300 text-slate-200 dark:text-slate-600"
+        className="mr-2 h-8 w-8 animate-spin fill-slate-500 text-slate-200 dark:text-slate-600"
         viewBox="0 0 100 101"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -26,7 +26,7 @@ export const LoadingSpinner = (props: { size?: number }) => {
 
 export const LoadingPage = () => {
   return (
-    <div className="absolute right-0 top-0 h-screen w-screen justify-center align-middle">
+    <div className="absolute right-0 top-0 flex h-screen w-screen items-center justify-center">
       <LoadingSpinner size={40} />
     </div>
   );

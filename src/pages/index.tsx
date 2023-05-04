@@ -2,6 +2,7 @@
 import { type NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
+import { useState } from "react";
 
 import { api } from "~/utils/api";
 import type { RouterOutputs } from "~/utils/api";
@@ -19,7 +20,17 @@ const CreatePostWizard = () => {
   //need user info here
 
   const { user } = useUser();
-  console.log(user);
+
+  const [input, setInput] = useState("");
+
+  const ctx = api.useContext();
+
+  const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
+    onSuccess: () => {
+      setInput("");
+      void ctx.posts.getAll.invalidate();
+    },
+  });
 
   if (!user) {
     return null;
@@ -35,9 +46,21 @@ const CreatePostWizard = () => {
         height={56}
       />
       <input
-        className="flex-grow bg-transparent p-2 outline-none outline-1"
-        placeholder="What's on your mind?"
+        className="flex-grow bg-transparent p-2 outline-none"
+        placeholder="Type some emojis"
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        disabled={isPosting}
       />
+      <button
+        onClick={() => {
+          mutate({ content: input });
+          setInput("");
+        }}
+      >
+        Post
+      </button>
     </div>
   );
 };
@@ -47,7 +70,7 @@ type PostWithUser = RouterOutputs["posts"]["getAll"][number];
 const PostView = (props: PostWithUser) => {
   const { post, author } = props;
   return (
-    <div key={post.id} className="border-b border-slate-400 p-4">
+    <div key={post.id} className="flex gap-3 border-b border-slate-400 p-4">
       <Image
         src={author.profileImageUrl}
         alt={`@${author.username}'s profile image`}
@@ -56,13 +79,14 @@ const PostView = (props: PostWithUser) => {
         height={56}
       />
       <div className="flex flex-col">
-        <div className="flex text-slate-300">
+        <div className="flex  text-slate-300">
           <span>{`@${author.username}`}</span>
+
+          <span className="font-thin">{` • ${dayjs(
+            post.createdAt
+          ).fromNow()}`}</span>
         </div>
         <span className="text-2xl">{post.content}</span>
-        <span className="font-thin">{` • ${dayjs(
-          post.createdAt
-        ).fromNow()}`}</span>
       </div>
     </div>
   );
@@ -77,7 +101,7 @@ const Feed = () => {
 
   return (
     <div className="flex flex-col">
-      {[...data, ...data]?.map((fullPost) => (
+      {data?.map((fullPost) => (
         <PostView {...fullPost} key={fullPost.post.id} />
       ))}
     </div>
